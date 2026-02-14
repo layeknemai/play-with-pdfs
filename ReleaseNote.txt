@@ -220,3 +220,48 @@ Revert back !!
 ❌ No zoom controls (removed)
 ❌ Touch/mobile redaction still not working (as before)
 ✅ Desktop mouse redaction WORKS PERFECTLY
+
+App Version v2.4:
+
+Added mobile-specific redaction without touching the desktop functionality! 🎉
+🎯 How It Works:
+Desktop (Unchanged):
+
+✅ Click and drag to select area
+✅ Red preview box while dragging
+✅ Works exactly as before
+
+Mobile (New Two-Tap Method):
+
+✅ Detects mobile device automatically
+✅ Shows "Mobile Mode" controls
+✅ Tap "Select Area" button to start
+✅ Tap first corner (green dot appears)
+✅ Tap opposite corner (creates black redaction box)
+✅ Repeat for multiple areas
+✅ Tap "Selecting..." to exit selection mode
+
+📱 Mobile Instructions:
+
+Upload PDF → Click "Mask Data"
+Tap "Select Area" button (turns green, says "Selecting...")
+Tap first corner of area to redact (green dot appears)
+Tap opposite corner (diagonal from first tap)
+Black box appears over selected area
+Repeat steps 3-4 for more redactions
+Tap "Selecting..." when done
+Click "Apply Redactions"
+
+🖥️ Desktop (No Changes):
+
+Upload PDF → Click "Mask Data"
+Click and drag to select areas (same as before)
+Click "Apply Redactions"
+
+🔍 Key Features:
+✅ Auto-detects device - Uses appropriate mode automatically
+✅ Desktop unaffected - Mouse drag still works perfectly
+✅ Mobile-friendly - Two-tap system works with fingers
+✅ Visual feedback - Green dot for first tap, black box when complete
+✅ Instructions update - Guides user through each step
+✅ Multiple redactions - Can add many areas before applying
