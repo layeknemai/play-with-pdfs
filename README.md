@@ -1,6 +1,6 @@
 # PDF Editor Pro - Progressive Web App (PWA)
 
-Your PDF Editor has been converted to a Progressive Web App! Users can now install it on their Android phones (and iPhones, and desktops) and use it like a native app.
+This PDF Editor has been converted to a Progressive Web App! Users can now install it on their Android phones (and iPhones, and desktops) and use it like a native app.
 
 ## 📦 Files Included
 
@@ -9,75 +9,6 @@ Your PDF Editor has been converted to a Progressive Web App! Users can now insta
 3. **service-worker.js** - Enables offline functionality
 4. **icon.svg** - App icon (needs to be converted to PNG)
 
-## 🚀 How to Deploy (Host Your PWA)
-
-### Option 1: GitHub Pages (FREE & Recommended)
-
-1. **Create a GitHub account** (if you don't have one): https://github.com/signup
-
-2. **Create a new repository:**
-   - Click "New repository"
-   - Name it: `pdf-editor-pro`
-   - Make it Public
-   - Click "Create repository"
-
-3. **Upload files:**
-   - Click "uploading an existing file"
-   - Drag and drop ALL files:
-     - index.html (rename pdf-editor.html to this)
-     - manifest.json
-     - service-worker.js
-     - icon-192.png (see icon creation below)
-     - icon-512.png (see icon creation below)
-   - Click "Commit changes"
-
-4. **Enable GitHub Pages:**
-   - Go to Settings → Pages
-   - Source: Deploy from a branch
-   - Branch: main
-   - Click Save
-
-5. **Your app is live!**
-   - URL will be: `https://YOUR-USERNAME.github.io/pdf-editor-pro/`
-   - Wait 2-3 minutes for it to deploy
-
-### Option 2: Netlify (FREE, Easier)
-
-1. **Go to:** https://www.netlify.com/
-2. **Sign up** with GitHub or email
-3. **Drag and drop** your folder with all files
-4. **Done!** You'll get a URL like: `https://random-name-12345.netlify.app`
-5. **Optional:** Change the name in Site Settings
-
-### Option 3: Vercel (FREE)
-
-1. **Go to:** https://vercel.com/
-2. **Sign up** with GitHub
-3. **Import your project** or drag files
-4. **Deploy!**
-
-## 🎨 Creating App Icons
-
-You need PNG icons. Here's how to create them:
-
-### Method 1: Online Converter (Easiest)
-1. Go to: https://www.adobe.com/express/feature/image/convert/svg-to-png
-2. Upload icon.svg
-3. Download as PNG
-4. Resize to 192x192 → Save as `icon-192.png`
-5. Resize to 512x512 → Save as `icon-512.png`
-
-### Method 2: Use Online Icon Generator
-1. Go to: https://www.pwabuilder.com/imageGenerator
-2. Upload any image (logo, screenshot, etc.)
-3. Download the generated icons
-4. Use the 192x192 and 512x512 versions
-
-### Method 3: Design Your Own
-1. Use Canva, Photoshop, or any design tool
-2. Create 192x192 PNG (for Android)
-3. Create 512x512 PNG (for splash screen)
-4. Save as `icon-192.png` and `icon-512.png`
 
 ## 📱 How Users Install on Android
 
@@ -215,5 +146,3 @@ Your PDF Editor is now a professional PWA that works on any device!
 
 **Developed by:** Nemai Layek  
 **Contact:** layek.nemai@gmail.com
-
-For updates or new features, come back to Claude with your HTML file!
