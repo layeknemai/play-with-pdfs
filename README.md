@@ -1,13 +1,14 @@
 # PDF Editor Pro - Progressive Web App (PWA)
 
-This PDF Editor has been converted to a Progressive Web App! Users can now install it on their Android phones (and iPhones, and desktops) and use it like a native app.
+This PDF Editor has been developed and converted to a Progressive Web App! Users can now install it on their Android phones (and iPhones, and desktops) and use it like a native app. Redact feature of this app works better on web version.
 
 ## 📦 Files Included
 
 1. **index.html** - Your main PDF editor (rename pdf-editor.html to index.html)
 2. **manifest.json** - PWA configuration
 3. **service-worker.js** - Enables offline functionality
-4. **icon.svg** - App icon (needs to be converted to PNG)
+4. **icon.svg** - App icon
+5. **icon-192.png** - App icon for Android 
 
 
 ## 📱 How Users Install on Android
@@ -92,16 +93,6 @@ Replace `icon-192.png` and `icon-512.png` with your own
 3. Re-upload to your hosting
 4. Users will get update automatically on next visit
 
-## 📊 Free Hosting Comparison
-
-| Service | Free Plan | Custom Domain | SSL | Bandwidth |
-|---------|-----------|---------------|-----|-----------|
-| **GitHub Pages** | ✅ Yes | ✅ Yes | ✅ Yes | 100GB/month |
-| **Netlify** | ✅ Yes | ✅ Yes | ✅ Yes | 100GB/month |
-| **Vercel** | ✅ Yes | ✅ Yes | ✅ Yes | 100GB/month |
-
-All three are excellent and FREE forever for personal projects!
-
 ## 🆘 Troubleshooting
 
 **"Install" button doesn't appear:**
@@ -123,24 +114,6 @@ All three are excellent and FREE forever for personal projects!
 - Service Worker must register first (visit site once online)
 - Check if files are cached (F12 → Application → Cache Storage)
 - Some external libraries may not cache properly
-
-## 💡 Tips
-
-1. **Test on your phone first** before sharing
-2. **Use a custom domain** for professional look (optional)
-3. **Update cache version** every time you make changes
-4. **Test offline** by turning off WiFi after first load
-5. **Check Analytics** - Add Google Analytics to track usage
-
-## 🎉 You're Done!
-
-Your PDF Editor is now a professional PWA that works on any device! 
-
-**Next steps:**
-1. Create the icon PNG files
-2. Rename pdf-editor.html to index.html
-3. Upload all files to GitHub Pages/Netlify/Vercel
-4. Share your URL with users!
 
 ---
 
