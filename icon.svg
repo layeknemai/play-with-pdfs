@@ -1,0 +1,19 @@
+<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="192" height="192" fill="#3b82f6" rx="32"/>
+  
+  <!-- PDF Document Icon -->
+  <g transform="translate(36, 36)">
+    <!-- Document -->
+    <rect x="20" y="10" width="80" height="110" fill="white" rx="4"/>
+    <polygon points="100,10 100,35 125,35" fill="white"/>
+    <path d="M 100 10 L 125 35 L 100 35 Z" fill="#dbeafe"/>
+    
+    <!-- PDF Text -->
+    <text x="60" y="75" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#3b82f6" text-anchor="middle">PDF</text>
+    
+    <!-- Compress arrows -->
+    <path d="M 35 95 L 45 85 L 45 90 L 55 90 L 55 100 L 45 100 L 45 105 Z" fill="#10b981"/>
+    <path d="M 85 95 L 75 85 L 75 90 L 65 90 L 65 100 L 75 100 L 75 105 Z" fill="#10b981"/>
+  </g>
+</svg>

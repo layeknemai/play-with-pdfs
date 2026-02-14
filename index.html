@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="description" content="Professional PDF Editor - Compress, merge, redact PDFs on any device">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PDF Editor Pro">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>PDF Editor Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 64px;
+            height: 64px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none;
+            max-width: 90%;
+        }
+        .install-prompt.show {
+            display: block;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-8">
+    <!-- Install Prompt -->
+    <div id="installPrompt" class="install-prompt">
+        <div class="flex items-center gap-4">
+            <div class="flex-1">
+                <p class="font-bold text-lg mb-1">Install PDF Editor Pro</p>
+                <p class="text-sm opacity-90">Add to your home screen for easy access</p>
+            </div>
+            <button onclick="installApp()" class="bg-white text-purple-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">
+                Install
+            </button>
+            <button onclick="dismissInstall()" class="text-white opacity-75 hover:opacity-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white">
+                <h1 class="text-4xl font-bold mb-2">PDF Editor Pro</h1>
+                <p class="text-blue-100">View, compress, redact, and merge PDFs with ease</p>
+            </div>
+
+            <!-- Upload View -->
+            <div id="uploadView" class="p-8">
+                <div onclick="document.getElementById('fileInput').click()" 
+                     class="border-4 border-dashed border-blue-300 rounded-xl p-12 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p class="text-xl font-semibold text-gray-700 mb-2">Click to upload PDF files</p>
+                    <p class="text-gray-500">or drag and drop your files here</p>
+                    <input type="file" id="fileInput" accept=".pdf" multiple class="hidden">
+                </div>
+
+                <div id="fileList" class="mt-8 hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">Uploaded Files (<span id="fileCount">0</span>)</h3>
+                    <div id="filesContainer" class="space-y-3"></div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button onclick="compressPDF()" 
+                                class="flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition shadow-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                            Reduce Size
+                        </button>
+
+                        <button onclick="startRedaction()" 
+                                class="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-orange-600 hover:to-red-700 transition shadow-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            Mask Data
+                        </button>
+
+                        <button onclick="mergePDFs()" id="mergeBtn"
+                                class="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-indigo-700 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            Merge PDFs
+                        </button>
+                    </div>
+
+                    <!-- Compression Options -->
+                    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Compression Level:
+                        </label>
+                        <select id="compressionLevel" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-3">
+                            <option value="0.9">Low - 90% quality (~10-20% smaller)</option>
+                            <option value="0.7" selected>Medium - 70% quality (~30-50% smaller)</option>
+                            <option value="0.5">High - 50% quality (~50-70% smaller)</option>
+                            <option value="0.3">Maximum - 30% quality (~70-80% smaller)</option>
+                        </select>
+                        <div class="flex items-center gap-2 mb-3">
+                            <input type="number" id="targetPercentage" placeholder="50" min="10" max="90" 
+                                   class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <span class="text-gray-700">% of original size</span>
+                        </div>
+                        <p class="text-xs text-gray-500">
+                            Compression works by rendering pages as images at reduced quality. Enter target % or use preset levels above.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Processing View -->
+            <div id="processingView" class="p-16 text-center hidden">
+                <div class="spinner mx-auto mb-6"></div>
+                <p class="text-xl font-semibold text-gray-700 mb-2">Processing your PDF...</p>
+                <p class="text-sm text-gray-500" id="progressText">Please wait...</p>
+            </div>
+
+            <!-- Redaction View -->
+            <div id="redactionView" class="p-8 hidden">
+                <div class="mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">Redact Sensitive Data</h3>
+                    <p class="text-gray-600 mb-4">Click and drag on the PDF to mark areas you want to redact.</p>
+                    <div class="flex gap-4">
+                        <button onclick="applyRedactions()" id="applyRedactBtn"
+                                class="bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition shadow-lg disabled:opacity-50">
+                            Apply Redactions <span id="redactionCount"></span>
+                        </button>
+                        <button onclick="clearRedactions()"
+                                class="bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition">
+                            Clear All
+                        </button>
+                        <button onclick="cancelRedaction()"
+                                class="bg-red-100 text-red-700 py-3 px-6 rounded-lg font-semibold hover:bg-red-200 transition">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="canvasLoading" class="border-4 border-blue-300 rounded-lg p-16 text-center">
+                    <div class="spinner mx-auto mb-4"></div>
+                    <p class="text-lg font-semibold text-gray-700">Loading PDF...</p>
+                </div>
+                
+                <div id="canvasContainer" class="border-4 border-blue-300 rounded-lg overflow-hidden bg-gray-100 hidden">
+                    <canvas id="pdfCanvas" class="cursor-crosshair max-w-full mx-auto block"></canvas>
+                </div>
+            </div>
+
+            <!-- Result View -->
+            <div id="resultView" class="p-8 hidden">
+                <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-8 mb-6">
+                    <div class="flex items-center justify-center mb-6">
+                        <div class="bg-green-500 rounded-full p-4">
+                            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-3xl font-bold text-center text-gray-800 mb-6">PDF Processed Successfully!</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-white rounded-lg p-6 shadow">
+                            <p class="text-sm text-gray-500 mb-1">Original Size</p>
+                            <p class="text-2xl font-bold text-gray-800" id="originalSize"></p>
+                        </div>
+                        <div class="bg-white rounded-lg p-6 shadow">
+                            <p class="text-sm text-gray-500 mb-1">New Size</p>
+                            <p class="text-2xl font-bold text-green-600" id="newSize"></p>
+                        </div>
+                    </div>
+
+                    <div id="reductionBox" class="bg-white rounded-lg p-6 shadow text-center hidden">
+                        <p class="text-sm text-gray-500 mb-1">Size Reduction</p>
+                        <p class="text-4xl font-bold text-blue-600" id="reduction"></p>
+                    </div>
+                </div>
+
+                <div class="flex gap-4">
+                    <button onclick="downloadPDF()"
+                            class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-lg">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        Download PDF
+                    </button>
+                    <button onclick="resetApp()"
+                            class="bg-gray-200 text-gray-700 py-4 px-6 rounded-xl font-semibold hover:bg-gray-300 transition">
+                        Process Another
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-gray-600">
+            <p class="text-sm">All processing happens in your browser. Your files are never uploaded to any server.</p>
+            <div class="mt-4 pt-4 border-t border-gray-300">
+                <p class="text-sm font-semibold text-gray-700">Developed By: Nemai Layek</p>
+                <p class="text-sm">Contact: <a href="mailto:layek.nemai@gmail.com" class="text-blue-600 hover:text-blue-800 hover:underline">layek.nemai@gmail.com</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // PWA Installation
+        let deferredPrompt;
+        const installPrompt = document.getElementById('installPrompt');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Show install prompt after 3 seconds
+            setTimeout(() => {
+                installPrompt.classList.add('show');
+            }, 3000);
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                    installPrompt.classList.remove('show');
+                });
+            }
+        }
+
+        function dismissInstall() {
+            installPrompt.classList.remove('show');
+            localStorage.setItem('installDismissed', 'true');
+        }
+
+        // Check if already dismissed
+        if (localStorage.getItem('installDismissed') === 'true') {
+            installPrompt.style.display = 'none';
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // Set PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const { jsPDF } = window.jspdf;
+
+        let uploadedFiles = [];
+        let processedPdfData = null;
+        let processedPdfName = '';
+        let redactionAreas = [];
+        let currentRedaction = null;
+        let pdfPageData = null;
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            uploadedFiles.push(...files);
+            updateFileList();
+        });
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            const filesContainer = document.getElementById('filesContainer');
+            const fileCount = document.getElementById('fileCount');
+            const mergeBtn = document.getElementById('mergeBtn');
+
+            if (uploadedFiles.length === 0) {
+                fileList.classList.add('hidden');
+                return;
+            }
+
+            fileList.classList.remove('hidden');
+            fileCount.textContent = uploadedFiles.length;
+            mergeBtn.disabled = uploadedFiles.length < 2;
+
+            filesContainer.innerHTML = uploadedFiles.map((file, index) => `
+                <div class="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-800">${file.name}</p>
+                        <p class="text-sm text-gray-500">${formatFileSize(file.size)}</p>
+                    </div>
+                    <button onclick="removeFile(${index})" class="p-2 text-red-500 hover:bg-red-50 rounded-full transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            updateFileList();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function showView(viewId) {
+            ['uploadView', 'processingView', 'redactionView', 'resultView'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        async function compressPDF() {
+            if (uploadedFiles.length === 0) {
+                alert('Please upload at least one PDF file');
+                return;
+            }
+
+            try {
+                showView('processingView');
+                document.getElementById('progressText').textContent = 'Loading PDF...';
+
+                const file = uploadedFiles[0];
+                const originalSize = file.size;
+
+                // Get quality from select or target percentage
+                let quality;
+                const targetPercent = parseFloat(document.getElementById('targetPercentage').value);
+                
+                if (targetPercent && targetPercent >= 10 && targetPercent <= 90) {
+                    // Calculate quality based on target percentage
+                    quality = 1 - (targetPercent / 100);
+                } else {
+                    quality = parseFloat(document.getElementById('compressionLevel').value);
+                }
+
+                console.log('Compressing with quality:', quality);
+
+                const arrayBuffer = await file.arrayBuffer();
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                const pdf = await loadingTask.promise;
+                const numPages = pdf.numPages;
+
+                // Calculate scale based on quality
+                const scale = quality > 0.7 ? 1.8 : quality > 0.5 ? 1.5 : quality > 0.3 ? 1.2 : 1.0;
+
+                // Create new PDF with jsPDF
+                const outputPdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'pt',
+                    format: 'a4'
+                });
+
+                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                    document.getElementById('progressText').textContent = `Processing page ${pageNum} of ${numPages}...`;
+                    
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: scale });
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const context = canvas.getContext('2d');
+
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+
+                    const imgData = canvas.toDataURL('image/jpeg', quality);
+
+                    if (pageNum > 1) {
+                        outputPdf.addPage();
+                    }
+
+                    const pageWidth = outputPdf.internal.pageSize.getWidth();
+                    const pageHeight = outputPdf.internal.pageSize.getHeight();
+
+                    outputPdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
+                }
+
+                const compressedPdfBytes = outputPdf.output('arraybuffer');
+
+                processedPdfData = new Uint8Array(compressedPdfBytes);
+                processedPdfName = `compressed_${file.name}`;
+
+                const compressedSize = compressedPdfBytes.byteLength;
+                const reductionPercent = ((1 - compressedSize / originalSize) * 100).toFixed(1);
+
+                document.getElementById('originalSize').textContent = formatFileSize(originalSize);
+                document.getElementById('newSize').textContent = formatFileSize(compressedSize);
+                document.getElementById('reduction').textContent = reductionPercent + '%';
+                document.getElementById('reductionBox').classList.remove('hidden');
+
+                showView('resultView');
+                console.log('Compression complete:', reductionPercent + '%');
+            } catch (error) {
+                console.error('Compression error:', error);
+                alert('Error compressing PDF: ' + error.message);
+                showView('uploadView');
+            }
+        }
+
+        async function mergePDFs() {
+            if (uploadedFiles.length < 2) {
+                alert('Please upload at least 2 PDF files to merge');
+                return;
+            }
+
+            try {
+                showView('processingView');
+                document.getElementById('progressText').textContent = 'Merging PDFs...';
+
+                const { PDFDocument } = PDFLib;
+                const mergedPdf = await PDFDocument.create();
+
+                for (let i = 0; i < uploadedFiles.length; i++) {
+                    document.getElementById('progressText').textContent = `Merging file ${i + 1} of ${uploadedFiles.length}...`;
+                    
+                    const file = uploadedFiles[i];
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await PDFDocument.load(arrayBuffer);
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach(page => mergedPdf.addPage(page));
+                }
+
+                const mergedPdfBytes = await mergedPdf.save();
+                const originalSize = uploadedFiles.reduce((sum, f) => sum + f.size, 0);
+
+                processedPdfData = mergedPdfBytes;
+                processedPdfName = 'merged_document.pdf';
+
+                document.getElementById('originalSize').textContent = formatFileSize(originalSize);
+                document.getElementById('newSize').textContent = formatFileSize(mergedPdfBytes.length);
+                document.getElementById('reductionBox').classList.add('hidden');
+
+                showView('resultView');
+                console.log('Merge complete');
+            } catch (error) {
+                console.error('Merge error:', error);
+                alert('Error merging PDFs: ' + error.message);
+                showView('uploadView');
+            }
+        }
+
+        async function startRedaction() {
+            if (uploadedFiles.length === 0) {
+                alert('Please upload a PDF file');
+                return;
+            }
+
+            showView('redactionView');
+            redactionAreas = [];
+            updateRedactionCount();
+            await renderPDFForRedaction();
+        }
+
+        async function renderPDFForRedaction() {
+            try {
+                document.getElementById('canvasLoading').classList.remove('hidden');
+                document.getElementById('canvasContainer').classList.add('hidden');
+
+                const file = uploadedFiles[0];
+                const arrayBuffer = await file.arrayBuffer();
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                const pdf = await loadingTask.promise;
+                const page = await pdf.getPage(1);
+
+                const canvas = document.getElementById('pdfCanvas');
+                const context = canvas.getContext('2d');
+                const viewport = page.getViewport({ scale: 1.5 });
+
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+
+                pdfPageData = { page, viewport };
+
+                document.getElementById('canvasLoading').classList.add('hidden');
+                document.getElementById('canvasContainer').classList.remove('hidden');
+
+                setupCanvasEvents();
+            } catch (error) {
+                console.error('Error rendering PDF:', error);
+                alert('Error loading PDF: ' + error.message);
+                showView('uploadView');
+            }
+        }
+
+        function setupCanvasEvents() {
+            const canvas = document.getElementById('pdfCanvas');
+
+            canvas.onmousedown = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                currentRedaction = { startX: x, startY: y };
+            };
+
+            canvas.onmousemove = (e) => {
+                if (!currentRedaction) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const context = canvas.getContext('2d');
+
+                if (pdfPageData) {
+                    pdfPageData.page.render({
+                        canvasContext: context,
+                        viewport: pdfPageData.viewport
+                    });
+                }
+
+                context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                redactionAreas.forEach(area => {
+                    context.fillRect(area.x, area.y, area.width, area.height);
+                });
+
+                context.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                context.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                context.lineWidth = 2;
+                const width = x - currentRedaction.startX;
+                const height = y - currentRedaction.startY;
+                context.fillRect(currentRedaction.startX, currentRedaction.startY, width, height);
+                context.strokeRect(currentRedaction.startX, currentRedaction.startY, width, height);
+            };
+
+            canvas.onmouseup = (e) => {
+                if (!currentRedaction) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const width = x - currentRedaction.startX;
+                const height = y - currentRedaction.startY;
+
+                if (Math.abs(width) > 5 && Math.abs(height) > 5) {
+                    redactionAreas.push({
+                        x: currentRedaction.startX,
+                        y: currentRedaction.startY,
+                        width: width,
+                        height: height
+                    });
+
+                    const context = canvas.getContext('2d');
+                    if (pdfPageData) {
+                        pdfPageData.page.render({
+                            canvasContext: context,
+                            viewport: pdfPageData.viewport
+                        }).promise.then(() => {
+                            context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                            redactionAreas.forEach(area => {
+                                context.fillRect(area.x, area.y, area.width, area.height);
+                            });
+                        });
+                    }
+
+                    updateRedactionCount();
+                }
+
+                currentRedaction = null;
+            };
+        }
+
+        function updateRedactionCount() {
+            const count = redactionAreas.length;
+            document.getElementById('redactionCount').textContent = count > 0 ? `(${count})` : '';
+            document.getElementById('applyRedactBtn').disabled = count === 0;
+        }
+
+        function clearRedactions() {
+            redactionAreas = [];
+            updateRedactionCount();
+            renderPDFForRedaction();
+        }
+
+        function cancelRedaction() {
+            redactionAreas = [];
+            pdfPageData = null;
+            showView('uploadView');
+        }
+
+        async function applyRedactions() {
+            if (redactionAreas.length === 0) {
+                alert('Please mark areas to redact');
+                return;
+            }
+
+            try {
+                document.getElementById('canvasLoading').classList.remove('hidden');
+                document.getElementById('canvasContainer').classList.add('hidden');
+
+                const { PDFDocument, rgb } = PDFLib;
+                const file = uploadedFiles[0];
+                const arrayBuffer = await file.arrayBuffer();
+                const pdfDoc = await PDFDocument.load(arrayBuffer);
+
+                const pages = pdfDoc.getPages();
+                const firstPage = pages[0];
+                const { height } = firstPage.getSize();
+
+                redactionAreas.forEach(area => {
+                    const pdfX = area.x / 1.5;
+                    const pdfY = height - (area.y / 1.5) - (area.height / 1.5);
+                    const pdfWidth = area.width / 1.5;
+                    const pdfHeight = area.height / 1.5;
+
+                    firstPage.drawRectangle({
+                        x: pdfX,
+                        y: pdfY,
+                        width: pdfWidth,
+                        height: pdfHeight,
+                        color: rgb(0, 0, 0)
+                    });
+                });
+
+                const redactedPdfBytes = await pdfDoc.save();
+
+                processedPdfData = redactedPdfBytes;
+                processedPdfName = `redacted_${file.name}`;
+
+                document.getElementById('originalSize').textContent = formatFileSize(file.size);
+                document.getElementById('newSize').textContent = formatFileSize(redactedPdfBytes.length);
+                document.getElementById('reductionBox').classList.add('hidden');
+
+                showView('resultView');
+            } catch (error) {
+                console.error('Redaction error:', error);
+                alert('Error applying redactions: ' + error.message);
+            }
+        }
+
+        function downloadPDF() {
+            if (!processedPdfData) return;
+
+            const blob = new Blob([processedPdfData], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = processedPdfName;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function resetApp() {
+            uploadedFiles = [];
+            processedPdfData = null;
+            processedPdfName = '';
+            redactionAreas = [];
+            pdfPageData = null;
+            
+            // Reset file input
+            const fileInput = document.getElementById('fileInput');
+            fileInput.value = '';
+            
+            // Reset target percentage input
+            document.getElementById('targetPercentage').value = '';
+            
+            updateFileList();
+            showView('uploadView');
+        }
+
+        console.log('PDF Editor Pro loaded successfully');
+    </script>
+</body>
+</html>
