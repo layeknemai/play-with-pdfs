@@ -163,7 +163,22 @@
             <div id="redactionView" class="p-8 hidden">
                 <div class="mb-6">
                     <h3 class="text-2xl font-bold text-gray-800 mb-2">Redact Sensitive Data</h3>
-                    <p class="text-gray-600 mb-4">Click and drag on the PDF to mark areas you want to redact.</p>
+                    <p class="text-gray-600 mb-4" id="redactionInstructions">Click and drag on the PDF to mark areas you want to redact.</p>
+                    
+                    <!-- Mobile Mode Toggle (only shown on mobile) -->
+                    <div id="mobileControls" class="mb-4 p-4 bg-blue-50 rounded-lg hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-semibold text-gray-700">Mobile Mode:</span>
+                            <button id="modeToggle" onclick="toggleRedactionMode()" 
+                                    class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                                <span id="modeText">Select Area</span>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-600" id="modeInstructions">
+                            Tap "Select Area" then tap two corners to mark a rectangular area.
+                        </p>
+                    </div>
+                    
                     <div class="flex gap-4">
                         <button onclick="applyRedactions()" id="applyRedactBtn"
                                 class="bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition shadow-lg disabled:opacity-50">
@@ -238,7 +253,7 @@
 
         <!-- Footer -->
         <div class="mt-8 text-center text-gray-600">
-            <p class="text-sm">No compromise to data privacy. All processing happens in your browser. Your files are never uploaded to any server.</p>
+            <p class="text-sm">All processing happens in your browser. Your files are never uploaded to any server. Mask Data feature works better on desktop app.</p>
             <div class="mt-4 pt-4 border-t border-gray-300">
                 <p class="text-sm font-semibold text-gray-700">Developed By: Nemai Layek</p>
                 <p class="text-sm">Contact: <a href="mailto:layek.nemai@gmail.com" class="text-blue-600 hover:text-blue-800 hover:underline">layek.nemai@gmail.com</a></p>
@@ -254,7 +269,6 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            // Show install prompt after 3 seconds
             setTimeout(() => {
                 installPrompt.classList.add('show');
             }, 3000);
@@ -278,7 +292,6 @@
             localStorage.setItem('installDismissed', 'true');
         }
 
-        // Check if already dismissed
         if (localStorage.getItem('installDismissed') === 'true') {
             installPrompt.style.display = 'none';
         }
@@ -306,6 +319,15 @@
         let redactionAreas = [];
         let currentRedaction = null;
         let pdfPageData = null;
+        let isMobileDevice = false;
+
+        // Detect mobile device
+        function detectMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   (window.innerWidth <= 768);
+        }
+
+        isMobileDevice = detectMobile();
 
         // File input handler
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -375,12 +397,10 @@
                 const file = uploadedFiles[0];
                 const originalSize = file.size;
 
-                // Get quality from select or target percentage
                 let quality;
                 const targetPercent = parseFloat(document.getElementById('targetPercentage').value);
                 
                 if (targetPercent && targetPercent >= 10 && targetPercent <= 90) {
-                    // Calculate quality based on target percentage
                     quality = 1 - (targetPercent / 100);
                 } else {
                     quality = parseFloat(document.getElementById('compressionLevel').value);
@@ -393,10 +413,8 @@
                 const pdf = await loadingTask.promise;
                 const numPages = pdf.numPages;
 
-                // Calculate scale based on quality
                 const scale = quality > 0.7 ? 1.8 : quality > 0.5 ? 1.5 : quality > 0.3 ? 1.2 : 1.0;
 
-                // Create new PDF with jsPDF
                 const outputPdf = new jsPDF({
                     orientation: 'portrait',
                     unit: 'pt',
@@ -512,6 +530,13 @@
                 document.getElementById('canvasLoading').classList.remove('hidden');
                 document.getElementById('canvasContainer').classList.add('hidden');
 
+                // Show mobile controls if on mobile
+                if (isMobileDevice) {
+                    document.getElementById('mobileControls').classList.remove('hidden');
+                    document.getElementById('redactionInstructions').textContent = 
+                        'Use the mobile controls below to mark areas for redaction.';
+                }
+
                 const file = uploadedFiles[0];
                 const arrayBuffer = await file.arrayBuffer();
                 const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
@@ -543,82 +568,208 @@
             }
         }
 
-        function setupCanvasEvents() {
-            const canvas = document.getElementById('pdfCanvas');
+        let mobileMode = false;
+        let mobileFirstPoint = null;
 
-            canvas.onmousedown = (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                currentRedaction = { startX: x, startY: y };
-            };
-
-            canvas.onmousemove = (e) => {
-                if (!currentRedaction) return;
-
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                const context = canvas.getContext('2d');
-
+        function toggleRedactionMode() {
+            mobileMode = !mobileMode;
+            const modeBtn = document.getElementById('modeToggle');
+            const modeText = document.getElementById('modeText');
+            const modeInstructions = document.getElementById('modeInstructions');
+            
+            if (mobileMode) {
+                modeBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                modeBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                modeText.textContent = 'Selecting...';
+                modeInstructions.textContent = 'Tap the first corner of the area you want to redact.';
+                mobileFirstPoint = null;
+            } else {
+                modeBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                modeBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                modeText.textContent = 'Select Area';
+                modeInstructions.textContent = 'Tap "Select Area" then tap two corners to mark a rectangular area.';
+                mobileFirstPoint = null;
+                
+                // Redraw to clear any preview
+                const context = document.getElementById('pdfCanvas').getContext('2d');
                 if (pdfPageData) {
                     pdfPageData.page.render({
                         canvasContext: context,
                         viewport: pdfPageData.viewport
                     });
-                }
-
-                context.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                redactionAreas.forEach(area => {
-                    context.fillRect(area.x, area.y, area.width, area.height);
-                });
-
-                context.fillStyle = 'rgba(255, 0, 0, 0.3)';
-                context.strokeStyle = 'rgba(255, 0, 0, 0.8)';
-                context.lineWidth = 2;
-                const width = x - currentRedaction.startX;
-                const height = y - currentRedaction.startY;
-                context.fillRect(currentRedaction.startX, currentRedaction.startY, width, height);
-                context.strokeRect(currentRedaction.startX, currentRedaction.startY, width, height);
-            };
-
-            canvas.onmouseup = (e) => {
-                if (!currentRedaction) return;
-
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                const width = x - currentRedaction.startX;
-                const height = y - currentRedaction.startY;
-
-                if (Math.abs(width) > 5 && Math.abs(height) > 5) {
-                    redactionAreas.push({
-                        x: currentRedaction.startX,
-                        y: currentRedaction.startY,
-                        width: width,
-                        height: height
+                    context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    redactionAreas.forEach(area => {
+                        context.fillRect(area.x, area.y, area.width, area.height);
                     });
+                }
+            }
+        }
+
+        function setupCanvasEvents() {
+            const canvas = document.getElementById('pdfCanvas');
+
+            if (isMobileDevice) {
+                // Mobile: Two-tap mode
+                canvas.onclick = function(e) {
+                    if (!mobileMode) return;
+                    
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    if (!mobileFirstPoint) {
+                        // First tap - mark starting point
+                        mobileFirstPoint = { x, y };
+                        
+                        // Visual feedback - draw a small circle
+                        const context = canvas.getContext('2d');
+                        context.fillStyle = 'rgba(0, 255, 0, 0.8)';
+                        context.beginPath();
+                        context.arc(x, y, 8, 0, 2 * Math.PI);
+                        context.fill();
+                        
+                        document.getElementById('modeInstructions').textContent = 
+                            'Now tap the opposite corner to complete the selection.';
+                    } else {
+                        // Second tap - complete the rectangle
+                        const width = x - mobileFirstPoint.x;
+                        const height = y - mobileFirstPoint.y;
+                        
+                        if (Math.abs(width) > 10 && Math.abs(height) > 10) {
+                            redactionAreas.push({
+                                x: mobileFirstPoint.x,
+                                y: mobileFirstPoint.y,
+                                width: width,
+                                height: height
+                            });
+                            
+                            // Redraw canvas with new redaction
+                            const context = canvas.getContext('2d');
+                            if (pdfPageData) {
+                                pdfPageData.page.render({
+                                    canvasContext: context,
+                                    viewport: pdfPageData.viewport
+                                }).promise.then(() => {
+                                    context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                                    redactionAreas.forEach(area => {
+                                        context.fillRect(area.x, area.y, area.width, area.height);
+                                    });
+                                });
+                            }
+                            
+                            updateRedactionCount();
+                            
+                            // Reset for next redaction
+                            mobileFirstPoint = null;
+                            document.getElementById('modeInstructions').textContent = 
+                                'Redaction added! Tap two corners again for another area, or tap "Selecting..." to exit.';
+                        } else {
+                            alert('Area too small. Please tap farther apart.');
+                            mobileFirstPoint = null;
+                            
+                            // Redraw to clear the green dot
+                            const context = canvas.getContext('2d');
+                            if (pdfPageData) {
+                                pdfPageData.page.render({
+                                    canvasContext: context,
+                                    viewport: pdfPageData.viewport
+                                });
+                                context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                                redactionAreas.forEach(area => {
+                                    context.fillRect(area.x, area.y, area.width, area.height);
+                                });
+                            }
+                            
+                            document.getElementById('modeInstructions').textContent = 
+                                'Tap the first corner of the area you want to redact.';
+                        }
+                    }
+                };
+                
+                // Disable mouse events on mobile
+                canvas.onmousedown = null;
+                canvas.onmousemove = null;
+                canvas.onmouseup = null;
+                
+            } else {
+                // Desktop: Original drag-to-select
+                canvas.onmousedown = (e) => {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    currentRedaction = { startX: x, startY: y };
+                };
+
+                canvas.onmousemove = (e) => {
+                    if (!currentRedaction) return;
+
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
 
                     const context = canvas.getContext('2d');
+
                     if (pdfPageData) {
                         pdfPageData.page.render({
                             canvasContext: context,
                             viewport: pdfPageData.viewport
-                        }).promise.then(() => {
-                            context.fillStyle = 'rgba(0, 0, 0, 0.8)';
-                            redactionAreas.forEach(area => {
-                                context.fillRect(area.x, area.y, area.width, area.height);
-                            });
                         });
                     }
 
-                    updateRedactionCount();
-                }
+                    context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                    redactionAreas.forEach(area => {
+                        context.fillRect(area.x, area.y, area.width, area.height);
+                    });
 
-                currentRedaction = null;
-            };
+                    context.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                    context.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                    context.lineWidth = 2;
+                    const width = x - currentRedaction.startX;
+                    const height = y - currentRedaction.startY;
+                    context.fillRect(currentRedaction.startX, currentRedaction.startY, width, height);
+                    context.strokeRect(currentRedaction.startX, currentRedaction.startY, width, height);
+                };
+
+                canvas.onmouseup = (e) => {
+                    if (!currentRedaction) return;
+
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    const width = x - currentRedaction.startX;
+                    const height = y - currentRedaction.startY;
+
+                    if (Math.abs(width) > 5 && Math.abs(height) > 5) {
+                        redactionAreas.push({
+                            x: currentRedaction.startX,
+                            y: currentRedaction.startY,
+                            width: width,
+                            height: height
+                        });
+
+                        const context = canvas.getContext('2d');
+                        if (pdfPageData) {
+                            pdfPageData.page.render({
+                                canvasContext: context,
+                                viewport: pdfPageData.viewport
+                            }).promise.then(() => {
+                                context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                                redactionAreas.forEach(area => {
+                                    context.fillRect(area.x, area.y, area.width, area.height);
+                                });
+                            });
+                        }
+
+                        updateRedactionCount();
+                    }
+
+                    currentRedaction = null;
+                };
+                
+                // Disable click event on desktop
+                canvas.onclick = null;
+            }
         }
 
         function updateRedactionCount() {
@@ -708,11 +859,9 @@
             redactionAreas = [];
             pdfPageData = null;
             
-            // Reset file input
             const fileInput = document.getElementById('fileInput');
             fileInput.value = '';
             
-            // Reset target percentage input
             document.getElementById('targetPercentage').value = '';
             
             updateFileList();
